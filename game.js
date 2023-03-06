@@ -4,15 +4,25 @@ const spanLives = document.querySelector("#lives");
 const spanTime = document.querySelector("#time");
 const spanRecords = document.querySelector("#record");
 const pResultado = document.querySelector("#resultado");
-
+const btnReset = document.querySelector("#reset");
 let canvasSize;
 let elementSize;
 let lives = 3;
 let level = 0;
-
+let firePos = {
+  x: undefined,
+  y: undefined,
+};
+let colision = {
+  x: undefined,
+  y: undefined,
+};
 let timeStart;
 let timePlaying;
 let timeInterval;
+let enemyColisionX;
+let enemyColisionY;
+let map;
 const playerPosition = {
   x: undefined,
   y: undefined,
@@ -50,8 +60,7 @@ function setCanvasSize() {
 function startGame() {
   game.font = elementSize + "px Verdana";
   game.textAlign = "end";
-
-  const map = maps[level];
+  map = maps[level];
 
   if (!map) {
     gameWin();
@@ -101,29 +110,36 @@ function startGame() {
 }
 
 function movePlayer() {
+  game.fillText(emojis["PLAYER"], playerPosition.x, playerPosition.y);
   const giftColosionX =
     playerPosition.x.toFixed(3) == giftPosition.x.toFixed(3);
   const giftColosionY =
     playerPosition.y.toFixed(3) == giftPosition.y.toFixed(3);
   const giftColosion = giftColosionX && giftColosionY;
 
-  if (giftColosion) {
-    levelWin();
-  }
-
   const enemyColision = bombs.find((enemy) => {
-    const enemyColisionX = enemy.x.toFixed(3) == playerPosition.x.toFixed(3);
-    const enemyColisionY = enemy.y.toFixed(3) == playerPosition.y.toFixed(3);
-
+    enemyColisionX = enemy.x.toFixed(3) == playerPosition.x.toFixed(3);
+    enemyColisionY = enemy.y.toFixed(3) == playerPosition.y.toFixed(3);
+    colision.x = enemy.x.toFixed(3);
+    colision.y = enemy.y.toFixed(3);
     return enemyColisionX && enemyColisionY;
   });
 
-  if (enemyColision) {
-    levelFail();
+  if (giftColosion) {
+    levelWin();
+  } else if (enemyColision) {
+    playerPosition.x = undefined;
+    playerPosition.y = undefined;
+    showExplosion();
+    setTimeout(levelFail, 200);
   }
-  game.fillText(emojis["PLAYER"], playerPosition.x, playerPosition.y);
 }
-
+function showExplosion() {
+  explosionFill();
+}
+function explosionFill() {
+  game.fillText(emojis["BOMB_COLLISION"], colision.x, colision.y);
+}
 function levelWin() {
   level++;
   startGame();
@@ -135,6 +151,7 @@ function levelFail() {
     level = 0;
     lives = 3;
     timeStart = undefined;
+    startGame();
   }
   playerPosition.x = undefined;
   playerPosition.y = undefined;
@@ -174,12 +191,13 @@ function formatTime(ms) {
   const minStr = `${min}`.padStart(2, "0");
   return `${minStr}:${segStr}:${csStr}`;
 }
+
 window.addEventListener("keydown", moveByKeys);
 btnUp.addEventListener("click", moveUp);
 btnDown.addEventListener("click", moveDown);
 btnRight.addEventListener("click", moveRight);
 btnLeft.addEventListener("click", moveLeft);
-
+btnReset.addEventListener("click", reset);
 function moveByKeys(event) {
   let key = event.key;
   switch (key) {
@@ -203,7 +221,9 @@ function moveByKeys(event) {
       break;
   }
 }
-
+function reset() {
+  location.reload();
+}
 function moveUp() {
   if (playerPosition.y - elementSize <= 0) {
     console.log("No puedes ir fuera del mapa");
